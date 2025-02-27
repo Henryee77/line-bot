@@ -1,5 +1,6 @@
 # coding: utf-8
 import os
+import datetime
 from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
@@ -8,47 +9,55 @@ from langdetect import detect
 import translators as ts
 
 app = Flask(__name__)
+channel_access_token = os.environ['LINE_CHANNEL_ACCESS_TOKEN']
+channel_secret = os.environ['LINE_CHANNEL_SECRET']
+line_bot_api = LineBotApi(channel_access_token)
+handler = WebhookHandler(channel_secret)
+lang_target = {'en': 'zh-Hant', 'zh-tw': 'en', 'zh-cn': 'en', 'ko': 'en', 'ja': 'en'}
+day_in_months = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+with open('vocabulary/Oxford 5000.txt', 'r') as f:
+  words = f.readlines()
+with open('vocabulary/09-conversational-phrases.txt', 'r') as f:
+  phrases = f.readlines()
 
 
-class LineBotHandler:
-  def __init__(self):
-    # line token
-    channel_access_token = os.environ['LINE_CHANNEL_ACCESS_TOKEN']
-    channel_secret = os.environ['LINE_CHANNEL_SECRET']
-    self.line_bot_api = LineBotApi(channel_access_token)
-    self.handler = WebhookHandler(channel_secret)
-    self.lang_target = {'en': 'zh-Hant', 'zh-tw': 'en', 'zh-cn': 'en', 'ko': 'en', 'ja': 'en'}
+@app.route("/callback", methods=['POST'])
+def callback():
+  # get X-Line-Signature header value
+  signature = request.headers['X-Line-Signature']
+  # get request body as text
+  body = request.get_data(as_text=True)
+  app.logger.info("Request body: " + body)
+  # handle webhook body
+  try:
+    handler.handle(body, signature)
+  except InvalidSignatureError:
+    abort(400)
+  return 'OK'
 
-  def callback(self):
-    app.route("/callback", methods=['POST'])
-    # get X-Line-Signature header value
-    signature = request.headers['X-Line-Signature']
-    # get request body as text
-    body = request.get_data(as_text=True)
-    app.logger.info("Request body: " + body)
-    # handle webhook body
-    try:
-      self.handler.handle(body, signature)
-    except InvalidSignatureError:
-      abort(400)
-    return 'OK'
 
-  def handle_message(self, event: MessageEvent):
-    self.handler.add(MessageEvent, message=TextMessage)
-    # translate
-    msg = str(event.message.text).strip()
-    if msg == 'Word of the day':
-      ts_text = 't1'
-    elif msg == 'Phrase of the day':
-      ts_text = 't2'
-    else:
-      ts_text = ts.translate_text(query_text=msg,
-                                  to_language=self.lang_target.get(detect(msg), 'zh-Hant'))
-    message = TextSendMessage(text=ts_text)
-    self.line_bot_api.reply_message(event.reply_token, message)
+@handler.add(MessageEvent, message=TextMessage)
+def handle_message(event: MessageEvent):
+  # translate
+  msg = str(event.message.text).strip()
+  if msg == 'Word of the day':
+    msg = words[date_2_index() % len(words)]
+    ts_text = '每日一字: ' + msg + '  -  ' + ts.translate_text(query_text=msg, to_language='zh-Hant')
+  elif msg == 'Phrase of the day':
+    msg = phrases[date_2_index() % len(phrases)]
+    ts_text = '每日一句: ' + msg + '  -  ' + ts.translate_text(query_text=msg, to_language='zh-Hant')
+  else:
+    ts_text = ts.translate_text(query_text=msg,
+                                to_language=lang_target.get(detect(msg), 'zh-Hant'))
+  message = TextSendMessage(text=ts_text)
+  line_bot_api.reply_message(event.reply_token, message)
+
+
+def date_2_index():
+  date = datetime.datetime.now()
+  return (date.year * 365 + sum([day_in_months[m - 1] for m in range(1, date.month)]) + date.day)
 
 
 if __name__ == "__main__":
   port = int(os.environ.get('PORT', 5000))
-  line_bot = LineBotHandler()
   app.run(host='0.0.0.0', port=port)
