@@ -14,6 +14,8 @@ channel_secret = os.environ['LINE_CHANNEL_SECRET']
 line_bot_api = LineBotApi(channel_access_token)
 handler = WebhookHandler(channel_secret)
 lang_target = {'en': 'zh-Hant', 'zh-tw': 'en', 'zh-cn': 'en', 'ko': 'en', 'ja': 'en'}
+default_lang = 'zh-TW'
+translator = 'google'
 day_in_months = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 with open('vocabulary/Oxford 5000.txt', 'r') as f:
   words = f.readlines()
@@ -42,14 +44,18 @@ def handle_message(event: MessageEvent):
   msg = str(event.message.text).strip()
   if msg == 'Word of the day':
     msg = words[date_2_index() % len(words)].strip()
-    ts_text = '每日一字: ' + msg + '  -  ' + ts.translate_text(query_text=msg, to_language='zh-Hant')
+    ts_text = '每日一字: ' + msg + '\n  -  ' + ts.translate_text(query_text=msg,
+                                                             translator=translator,
+                                                             to_language=default_lang)
   elif msg == 'Phrase of the day':
     msg = phrases[date_2_index() % len(phrases)].strip()
-    ts_text = '每日一句: ' + msg + '  -  ' + ts.translate_text(query_text=msg, to_language='zh-Hant')
+    ts_text = '每日一句: ' + msg + '\n  -  ' + ts.translate_text(query_text=msg,
+                                                             translator=translator,
+                                                             to_language=default_lang)
   else:
     ts_text = ts.translate_text(query_text=msg,
-                                translator='google',
-                                to_language=lang_target.get(detect(msg), 'zh-Hant'))
+                                translator=translator,
+                                to_language=lang_target.get(detect(msg), default_lang))
   message = TextSendMessage(text=ts_text)
   line_bot_api.reply_message(event.reply_token, message)
 

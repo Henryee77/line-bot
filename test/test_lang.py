@@ -7,4 +7,5 @@ while True:
   msg = input()
   print(detect(msg))
   print(ts.translate_text(query_text=msg,
-                          to_language=lang_target.get(detect(msg), 'zh-Hant')))
+                          translator='google',
+                          to_language=lang_target.get(detect(msg), 'zh-TW')))
