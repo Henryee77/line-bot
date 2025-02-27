@@ -41,13 +41,14 @@ def handle_message(event: MessageEvent):
   # translate
   msg = str(event.message.text).strip()
   if msg == 'Word of the day':
-    msg = words[date_2_index() % len(words)]
+    msg = words[date_2_index() % len(words)].strip()
     ts_text = '每日一字: ' + msg + '  -  ' + ts.translate_text(query_text=msg, to_language='zh-Hant')
   elif msg == 'Phrase of the day':
-    msg = phrases[date_2_index() % len(phrases)]
+    msg = phrases[date_2_index() % len(phrases)].strip()
     ts_text = '每日一句: ' + msg + '  -  ' + ts.translate_text(query_text=msg, to_language='zh-Hant')
   else:
     ts_text = ts.translate_text(query_text=msg,
+                                translator='google',
                                 to_language=lang_target.get(detect(msg), 'zh-Hant'))
   message = TextSendMessage(text=ts_text)
   line_bot_api.reply_message(event.reply_token, message)
