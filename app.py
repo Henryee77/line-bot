@@ -7,6 +7,8 @@ from linebot.models import MessageEvent, TextMessage, TextSendMessage
 from langdetect import detect
 import translators as ts
 
+app = Flask(__name__)
+
 
 class LineBotHandler:
   def __init__(self):
@@ -15,16 +17,15 @@ class LineBotHandler:
     channel_secret = os.environ['LINE_CHANNEL_SECRET']
     self.line_bot_api = LineBotApi(channel_access_token)
     self.handler = WebhookHandler(channel_secret)
-    self.app = Flask(__name__)
     self.lang_target = {'en': 'zh-Hant', 'zh-tw': 'en', 'zh-cn': 'en', 'ko': 'en', 'ja': 'en'}
 
   def callback(self):
-    self.app.route("/callback", methods=['POST'])
+    app.route("/callback", methods=['POST'])
     # get X-Line-Signature header value
     signature = request.headers['X-Line-Signature']
     # get request body as text
     body = request.get_data(as_text=True)
-    self.app.logger.info("Request body: " + body)
+    app.logger.info("Request body: " + body)
     # handle webhook body
     try:
       self.handler.handle(body, signature)
@@ -50,4 +51,4 @@ class LineBotHandler:
 if __name__ == "__main__":
   port = int(os.environ.get('PORT', 5000))
   line_bot = LineBotHandler()
-  line_bot.app.run(host='0.0.0.0', port=port)
+  app.run(host='0.0.0.0', port=port)
