@@ -4,6 +4,8 @@ from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from langdetect import detect
+import translators as ts
 
 # line token
 channel_access_token = os.environ['LINE_CHANNEL_ACCESS_TOKEN']
@@ -12,6 +14,8 @@ line_bot_api = LineBotApi(channel_access_token)
 handler = WebhookHandler(channel_secret)
 
 app = Flask(__name__)
+
+lang_target = {'en': 'zh-CHT', 'zh-tw': 'en'}
 
 
 @app.route("/callback", methods=['POST'])
@@ -30,10 +34,11 @@ def callback():
 
 
 @handler.add(MessageEvent, message=TextMessage)
-def handle_message(event):
+def handle_message(event: MessageEvent):
   # echo
   msg = event.message.text
-  message = TextSendMessage(text=msg)
+  ts_text = ts.translate_text(msg, 'auto', lang_target[detect(msg)])
+  message = TextSendMessage(text=ts_text)
   line_bot_api.reply_message(event.reply_token, message)
 
 
