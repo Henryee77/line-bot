@@ -37,7 +37,7 @@ def callback():
 def handle_message(event: MessageEvent):
   # translate
   msg = event.message.text
-  ts_text = ts.translate_text(msg, 'auto', lang_target[detect(msg)])
+  ts_text = ts.translate_text(msg, 'auto', lang_target.get(detect(msg), default='zh-CHT'))
   message = TextSendMessage(text=ts_text)
   line_bot_api.reply_message(event.reply_token, message)
 
