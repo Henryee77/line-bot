@@ -15,7 +15,7 @@ handler = WebhookHandler(channel_secret)
 
 app = Flask(__name__)
 
-lang_target = {'en': 'zh-CHT', 'zh-tw': 'en'}
+lang_target = {'en': 'zh-Hant', 'zh-tw': 'en', 'zh-cn': 'en', 'ko': 'en', 'ja': 'en'}
 
 
 @app.route("/callback", methods=['POST'])
@@ -37,7 +37,8 @@ def callback():
 def handle_message(event: MessageEvent):
   # translate
   msg = event.message.text
-  ts_text = ts.translate_text(msg, 'auto', lang_target.get(detect(msg), default='zh-CHT'))
+  ts_text = ts.translate_text(query_text=msg,
+                              to_language=lang_target.get(detect(msg), 'zh-Hant'))
   message = TextSendMessage(text=ts_text)
   line_bot_api.reply_message(event.reply_token, message)
 
