@@ -35,7 +35,7 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event: MessageEvent):
-  # echo
+  # translate
   msg = event.message.text
   ts_text = ts.translate_text(msg, 'auto', lang_target[detect(msg)])
   message = TextSendMessage(text=ts_text)
